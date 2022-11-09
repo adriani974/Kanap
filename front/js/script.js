@@ -1,7 +1,7 @@
 const product = document.getElementById("items");
 
 /**
- * essais de se connecter à l'api.
+ * essais de se connecter à l'api et récupèrent tous les éléments.
  * 
  */
 function connectToApiProducts(){
