@@ -1,10 +1,30 @@
-const product = document.getElementById("items");
+/**
+ * Correspond au produit sofa.
+ * 
+ */
+class ProductSofa{
+    constructor(sofa){
+        this.sofa = sofa;
+    }
+
+    getName(){return this.sofa.name;}
+
+    getDescription(){return this.sofa.description;}
+
+    getID(){return this.sofa._id;}
+
+    getImageURL(){return this.sofa.imageUrl;}
+
+    getAltTxt(){return this.sofa.altTxt;}
+
+    getPrice(){return this.sofa.price;}
+}
 
 /**
  * essais de se connecter à l'api et récupèrent tous les éléments.
  * 
  */
-function connectToApiProducts(){
+function connectToApiForAllProducts(){
 fetch("http://localhost:3000/api/products")
     .then(function(res){
         if(res.ok){
@@ -13,7 +33,6 @@ fetch("http://localhost:3000/api/products")
     })
     .then(function(value){
         addElement(value);
-        console.log(value);
     })
     .catch(function(err){
         console.log("Une erreur c'est produite lors du chargements des produits :"+err);
@@ -52,34 +71,37 @@ async function asyncCall(delay, element) {
 function delayBeforeCreateElement(delay, element) {
     return new Promise(() => {
       setTimeout(() => {
-        createElement(element);
+        createElement(new ProductSofa(element));
       }, delay);
     });
 } 
 
 /**
- * Crée un element à partir des données de products.
- * @param { any } value
+ * Crée un ensemble de balises ainsi que leur mise à jour pour l'affichage html d'un produit.
+ * @param { ProductSofa } sofa
  */
-function createElement(value){
-
+function createElement(sofa){
+const product = document.getElementById("items");
 const element_a = document.createElement("a");
 const element_article = document.createElement("article");
 const element_img = document.createElement("img");
 const element_h3 = document.createElement("h3");
 const element_p = document.createElement("p");
 
-const textFor_h3 = document.createTextNode(value.name);
-const textFor_p = document.createTextNode(value.description);
+//Insert un texte entre les balises concernés
+const textFor_h3 = document.createTextNode(sofa.getName());
+const textFor_p = document.createTextNode(sofa.getDescription());
 
+//ajoute une nouvelle classe
 element_h3.classList.add("productName");
 element_p.classList.add("productDescription");
 
-element_a.setAttribute("href","./product.html?id="+value._id);
-element_img.setAttribute("src", value.imageUrl);
-element_img.setAttribute("alt", value.altTxt);
+//modifie les attributs
+element_a.setAttribute("href","./product.html?id="+sofa.getID());
+element_img.setAttribute("src", sofa.getImageURL());
+element_img.setAttribute("alt", sofa.getAltTxt());
 
-
+//ajoute l'enfant aux parents
 product.appendChild(element_a);
 element_a.appendChild(element_article);
 element_h3.appendChild(textFor_h3);
@@ -90,4 +112,4 @@ element_article.appendChild(element_p);
 }
  
 
-let allProducts = connectToApiProducts();
+let allProducts = connectToApiForAllProducts();
