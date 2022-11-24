@@ -5,6 +5,7 @@ var sofa_product = null;
  * Essais de se connecter à l'api products et récupère un produit à partir de son id.
  */
 function connectToApiForOneProduct(_produit){
+    let produit_id = null;
     let produit_color = null;
     let produit_quantity = null;
         
@@ -17,9 +18,10 @@ function connectToApiForOneProduct(_produit){
         .then(function(value){
             this.sofa_product = new ProductSofa(value);
             for(let i = 0; i < _produit.length; i++){
+                produit_id = _produit[i].id;
                 produit_color = _produit[i].color;
                 produit_quantity = _produit[i].quantity;
-                createElementHtml(new ProductSofa(value), produit_color, produit_quantity);
+                createElementHtml(new ProductSofa(value), produit_id, produit_color, produit_quantity);
             }
             
             //console.log(this.sofa_product);
@@ -40,19 +42,47 @@ function connectToApiForOneProduct(_produit){
         this.sofa = _sofa;
     }
 
-    getName(){return this.sofa.name;}
+    /**
+     * Retourne un tableau de type String contenant les différents couleur disponible pour le sofa.
+     * @return { Array } Les differents couleurs disponible.
+     */
+    getColors(){return this.sofa.colors;}
 
-    getDescription(){return this.sofa.description;}
-
+    /**
+     * Retourne l'identifiant du sofa.
+     * @return { String } L'identifiant.
+     */
     getID(){return this.sofa._id;}
 
-    getImageURL(){return this.sofa.imageUrl;}
+    /**
+     * Retourne le nom du sofa.
+     * @return { String } Le nom.
+     */
+    getName(){return this.sofa.name;}
 
-    getAltTxt(){return this.sofa.altTxt;}
-
+    /**
+     * Retourne le prix du sofa.
+     * @return { Number } Le prix.
+     */
     getPrice(){return this.sofa.price;}
 
-    getColors(){return this.sofa.colors;}
+    /**
+     * Retourne l'image du sofa.
+     * @return { String } L'image.
+     */
+    getImageURL(){return this.sofa.imageUrl;}
+
+    /**
+     * Retourne la description du sofa.
+     * @return { String } La description.
+     */
+    getDescription(){return this.sofa.description;}
+
+    /**
+     * Retourne le texte alternative associer à l'image du sofa.
+     * @return { String } Le texte alternative.
+     */
+    getAltTxt(){return this.sofa.altTxt;}  
 }
 
 /**
@@ -176,10 +206,10 @@ class ManageLocalStorage{
 /**
  * Crée et assemble plusieurs composants html pour l'affichage d'un produit.
  */
-function createElementHtml(_sofa, _produit_color, _produit_quantity){
+function createElementHtml(_sofa, _produit_id, _produit_color, _produit_quantity){
     const element_section = document.getElementById("cart__items");
     try {
-        element_section.appendChild(elementHtml_Div__cartItem(_sofa, _produit_color, _produit_quantity));
+        element_section.appendChild(elementHtml_Div__cartItem(_sofa, _produit_id, _produit_color, _produit_quantity));
     } catch (error) {
         console.log(" Une erreur détécter lors de la création d'élément html "+error);
     }   
@@ -189,9 +219,12 @@ function createElementHtml(_sofa, _produit_color, _produit_quantity){
  * Crée un element html de type 'article' contenant l'image, le nom, la description et les options de modification du produit.
  * @param { ProductSofa } sofa modèle représentant un produit de type canapé.
  */
-function elementHtml_Div__cartItem(_sofa, _produit_color, _produit_quantity){
+function elementHtml_Div__cartItem(_sofa, _produit_id, _produit_color, _produit_quantity){
     const element_article = document.createElement("article");
     element_article.classList.add("cart__item");
+
+    element_article.dataset.id = _produit_id;
+    element_article.dataset.color = _produit_color; 
 
     element_article.appendChild(elementHtml_Div__cartItem_img(_sofa));
     element_article.appendChild(elementHtml_Div__cartItem_content(_sofa, _produit_color, _produit_quantity));

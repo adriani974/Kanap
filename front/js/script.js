@@ -1,26 +1,54 @@
 
 /**
  * Classe modélisant les produits de type sofa.
- * @param { object } _sofa modèle de sofa.
+ * @param { object } sofa modèle de sofa.
  */
-class ProductSofa{
+ class ProductSofa{
     constructor(_sofa){
         this.sofa = _sofa;
     }
 
-    getName(){return this.sofa.name;}
+    /**
+     * Retourne un tableau de type String contenant les différents couleur disponible pour le sofa.
+     * @return { Array } Les differents couleurs disponible.
+     */
+    getColors(){return this.sofa.colors;}
 
-    getDescription(){return this.sofa.description;}
-
+    /**
+     * Retourne l'identifiant du sofa.
+     * @return { String } L'identifiant.
+     */
     getID(){return this.sofa._id;}
 
-    getImageURL(){return this.sofa.imageUrl;}
+    /**
+     * Retourne le nom du sofa.
+     * @return { String } Le nom.
+     */
+    getName(){return this.sofa.name;}
 
-    getAltTxt(){return this.sofa.altTxt;}
-
+    /**
+     * Retourne le prix du sofa.
+     * @return { Number } Le prix.
+     */
     getPrice(){return this.sofa.price;}
 
-    getColors(){return this.sofa.colors;}
+    /**
+     * Retourne l'image du sofa.
+     * @return { String } L'image.
+     */
+    getImageURL(){return this.sofa.imageUrl;}
+
+    /**
+     * Retourne la description du sofa.
+     * @return { String } La description.
+     */
+    getDescription(){return this.sofa.description;}
+
+    /**
+     * Retourne le texte alternative associer à l'image du sofa.
+     * @return { String } Le texte alternative.
+     */
+    getAltTxt(){return this.sofa.altTxt;}  
 }
 
 /**
@@ -45,7 +73,7 @@ function connectToApiForAllProducts(){
 
 /**
  * Affiche un message d'information à l'intention de l'utilisateur.
- * @param { int } number correspnd au message que l'ont souhaite afficher.
+ * @param { int } number correspond au message que l'ont souhaite afficher.
  */
 function messageInformations(number) {
     let message = "";
