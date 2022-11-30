@@ -1,14 +1,24 @@
 var id_product = null;
 var sofa_product = null;
+var item_product = null;
+var listOfProducts = null;
+var itemProductList = [];
+var listOfID = [];
+var totalPrice = 0;
+var totalQuantity = 0;
 
 /**
  * Essais de se connecter à l'api products et récupère un produit à partir de son id.
+ * @param { any } _produit un modèle de produit issue de localStorage.
+ * @param { any } _position correspond au tour actuel à l'intérieur d'une boucle.
+ * @param { any } _positionFinal correspond au dernier tour à l'intérieur d'une boucle.
  */
-function connectToApiForOneProduct(_produit){
+function connectToApiForOneProduct(_produit, _position, _positionFinal){
     let produit_id = null;
     let produit_color = null;
     let produit_quantity = null;
-        
+    let produit_list = [];
+   
     fetch("http://localhost:3000/api/products/"+this.id_product)
         .then(function(res){
             if(res.ok){
@@ -16,21 +26,228 @@ function connectToApiForOneProduct(_produit){
             }
         })
         .then(function(value){
-            this.sofa_product = new ProductSofa(value);
+            sofa_product = new ProductSofa(value);
+
+            //effectue une boucle afin de crée tous les éléments html pour chaque produit
             for(let i = 0; i < _produit.length; i++){
                 produit_id = _produit[i].id;
                 produit_color = _produit[i].color;
                 produit_quantity = _produit[i].quantity;
-                createElementHtml(new ProductSofa(value), produit_id, produit_color, produit_quantity);
+                createElementHtml(sofa_product, produit_id, produit_color, produit_quantity);
+                item_product = new ProductItem(sofa_product.getName(), produit_id, produit_color, Number(produit_quantity), sofa_product.getPrice());
+                produit_list.push(item_product);
             }
-            
-            //console.log(this.sofa_product);
-            console.log("--------------end-------thenfunction");
+
+            listOfID.push(produit_id);
+            itemProductList.push(produit_list);
+            produit_list.clear;
+
+            //a la fin de la boucle, ajoute des écouteurs d'événements aux élement html conserné puis met à jour le prix final ainsi que la quantité.
+            if(_position == _positionFinal){
+                console.log("c'est fini !");
+                try {
+                    addListenersToManageQuantity();
+                    countTotalPrice();
+                    updateTotalPrice();
+                    updateTotalQuantity();
+                } catch (error) {
+                    console.log("Une erreur c'est produite dans l'ecouteur de quantity :"+error);
+                } 
+            }
+           
         })
         .catch(function(err){
             
             console.log("Une erreur c'est produite lors du chargements des produits :"+err);
         });
+}
+
+/**
+ * Ajoutent des écouteurs d'évenement à chaque button modifiant la quantité d'un produit.
+ */
+function addListenersToManageQuantity(){
+    let button_quantity = document.querySelectorAll(".cart__item");
+    button_quantity.forEach((button_quantity)=>{
+        button_quantity.addEventListener("change", (event) => {
+
+            //récupèrent l'id et la couleur de l'élement
+            let produit = button_quantity.closest("article");
+            let produit_id = produit.dataset.id;
+            let produit_color = produit.dataset.color;
+
+            //parcourent la liste des produits issue de l'api products
+            for (const key in listOfProducts) {
+                let product = JSON.parse(listOfProducts[key]);
+
+                //parcourent product afin de trouver le produit ayant le même id et color que celle récupérer juste en haut
+                for (const key in product) {
+                    if (product[key].id === produit_id && product[key].color === produit_color){
+                        console.log("product:id --> "+product[key].id);
+                        console.log("product:color --> "+product[key].color);
+                        
+                        if(event.target.value > 100){
+                            event.target.value = 100;
+                            product[key].quantity = 100;
+                            localStorage.setItem(produit_id, JSON.stringify(product));
+                            updateQuantity(product[key].id, product[key].color, product[key].quantity);
+
+                        }else if(event.target.value < 1){
+                            event.target.value = 1;
+                            product[key].quantity = 1;
+                            localStorage.setItem(produit_id, JSON.stringify(product));
+                            updateQuantity(product[key].id, product[key].color, product[key].quantity);
+
+                        }else{
+                            product[key].quantity = Number(event.target.value);
+                            localStorage.setItem(produit_id, JSON.stringify(product));
+                            updateQuantity(product[key].id, product[key].color, product[key].quantity);
+                        }   
+                    }
+                }
+            }
+
+            //initialisent les variables totalPrice et totalQuantity puis remet à jour les nouvelles données
+            totalPrice = 0;
+            totalQuantity = 0;
+            countTotalPrice();
+            updateTotalPrice();
+            updateTotalQuantity();
+        });
+    });    
+}
+
+/**
+ * Additionnent tous les produits de la même catégorie pour avoir la quantité et le prix total de l'ensemble des produits
+ */
+async function countTotalPrice(){
+    let numGroup = 1;
+    let quantity = 0;
+    let quantityList = [];
+    let priceList = [];
+    let price = 0;
+    let newTotalPrice = 0;
+    let positionId = 0;
+
+    itemProductList.forEach(element => {
+
+        element.forEach(produit => {
+            if(produit.getID() == listOfID[positionId]){//ont additionnent tous les quantité des produits ayant la même id
+                quantity = quantity + Number(produit.getQuantity());
+                price = price + Number(produit.getPrice());
+            }
+            //console.log("name -> "+produit.getName());
+            //console.log("color -> "+produit.getColor());
+            //console.log("quantity -> "+produit.getQuantity());
+        });
+
+        priceList.push(price);
+        quantityList.push(quantity);
+        positionId++;
+        numGroup++;
+        quantity = 0;
+        price = 0;
+    });
+
+    //ont additionnent chaque quantité afin d'obtenir la quantité total de produit
+    quantityList.forEach(element => {
+        console.log(" quantityInList --> "+element);
+        totalQuantity = totalQuantity + Number(element);
+    });
+
+    //ont fait l'addition du prix x la quantité de produit issue d'un même catégorie  afin d'obtenir le prix total de tous les produits
+    priceList.forEach(element => {
+        console.log(" priceInList --> "+element);
+    });
+
+    for(let i = 0; i < priceList.length; i++){
+        newTotalPrice = Number(priceList[i]) * Number(quantityList[i]);
+        totalPrice = totalPrice + newTotalPrice;
+    }
+}
+
+/**
+ * Met à jour la quantié d'un produit.
+ * @param { String } _id l'id du produit.
+ * @param { String } _color la couleur du produit.
+ * @param { Number } _quantity la quantité du produit.
+ */
+async function updateQuantity(_id, _color, _quantity){
+    itemProductList.forEach(element => {
+
+        element.forEach(produit => {
+            if(produit.getID() == _id && produit.getColor() == _color){
+                produit.setQuantity(Number(_quantity));
+            } 
+        });
+    });
+}
+
+/**
+ * Met à jour le prix dans la page html.
+ */
+async function updateTotalPrice(){
+    document.querySelector("#totalPrice").innerHTML = totalPrice; 
+}
+
+/**
+ * Met à jour la quantité dans la page html.
+ */
+async function updateTotalQuantity(){
+    document.querySelector("#totalQuantity").innerHTML = totalQuantity; 
+}
+
+/**
+ * Classe modélisant un produit.
+ * @param { String } _name modèle de produit.
+ * @param { String } _id modèle de produit.
+ * @param { String } _color modèle de produit.
+ * @param { Number } _quantity modèle de produit.
+ * @param { Number } _price modèle de produit.
+ */
+ class ProductItem{
+    constructor(_name, _id, _color, _quantity, _price){
+        this.name = _name;
+        this.id = _id;
+        this.color = _color;
+        this.quantity = _quantity;
+        this.price = _price;
+    }
+
+    /**
+     * Retourne le nom du produit.
+     * @return { String } Le nom du produit.
+     */
+    getName(){return this.name;}
+
+    /**
+     * Retourne l'identifiant du produit.
+     * @return { String } L'identifiant du produit.
+     */
+    getID(){return this.id;}
+
+    /**
+     * Retourne la couleur du produit.
+     * @return { String } La couleur du produit.
+     */
+    getColor(){return this.color;}
+
+    /**
+     * Retourne la quantité du produit.
+     * @return { String } La quantité du produit.
+     */
+    getQuantity(){return this.quantity;}
+
+    /**
+     * Retourne le prix du produit.
+     * @return { String } Le prix du produit.
+     */
+    getPrice(){return this.price;}
+
+    /**
+     * Modifie la quantité du produit.
+     * @param { Number } _quantity la quantité du produit.
+     */
+    setQuantity(_quantity){this.quantity = _quantity;}
 }
 
 /**
@@ -203,6 +420,7 @@ class ManageLocalStorage{
     getLocalStorage_key(value){return localStorage.key(value);}
 }
 
+/********************************************************************************************* */
 /**
  * Crée et assemble plusieurs composants html pour l'affichage d'un produit.
  */
@@ -342,7 +560,7 @@ function elementHtml_Div__cartItem_contentSettings_quantity(_produit_quantity){
  * Crée un element html de type 'div' permettant de supprimé le produit actuel selectionné .
  * @return { any } Une balise html de type div.
  */
-function elementHtml_Div__cartItem_contentSettings_delete(_produit_quantity){
+function elementHtml_Div__cartItem_contentSettings_delete(){
     const element_div = document.createElement("div");
     const element_p = document.createElement("p");
 
@@ -357,39 +575,38 @@ function elementHtml_Div__cartItem_contentSettings_delete(_produit_quantity){
     return element_div;
 }
 
-/**
- * Affichent tout les produits contenu dans le panier.
- * @param { ManageLocalStorage } _manageLocalStorage instance de la classe ManageLocalStorage.
- */
-class LoadEveryProducts {
-    constructor(_manageLocalStorage) {
-        var fois = 1;
-        let list = _manageLocalStorage.getAllLocalStorage();
-        for (let id in list) {
-            let produit = JSON.parse(list[id]);
-            this.id_product = id;
-            connectToApiForOneProduct(produit);
-            //console.log(" list : "+id+" --> "+list[id]); 
-            console.log(" --------------------iteration---------------- " + fois);
-            //console.log(this.sofa_product);
-            fois++;
-        }
-    }
-}
+/****************************************************************************************** */
+var manageLocalStorage = new ManageLocalStorage();
 
-let manageLocalStorage = new ManageLocalStorage();
-//let loadEveryProducts = new LoadEveryProducts(manageLocalStorage);
-var fois = 1;
-let list = manageLocalStorage.getAllLocalStorage();
-for (let id in list) {
-    let produit = JSON.parse(list[id]);
-    this.id_product = id;
-    connectToApiForOneProduct(produit);
-    //console.log(" list : "+id+" --> "+list[id]); 
-    console.log(" --------------------iteration---------------- " + fois);
-    //console.log(this.sofa_product);
-    fois++;
-}
+listOfProducts = manageLocalStorage.getAllLocalStorage();
+
+//Récupèrent une Promise pour l'ensemble de produit
+Promise.all([listOfProducts])
+  .then(response => {
+        let position = 1;
+        let positionFinal = 0;
+        itemProductList.clear;
+        listOfID.clear;
+        //récupèrent 
+        for (let i in listOfProducts) {
+            positionFinal++;
+        }
+        
+        for (let id in listOfProducts) {
+            let produit = JSON.parse(listOfProducts[id]);
+            this.id_product = id;
+            connectToApiForOneProduct(produit, position, positionFinal);
+            position++;
+        };
+        
+    }).catch(error => {
+        console.log(`Erreur pour la Promise : ${error}`);
+});
+
+
+
+
+
 
 
 
