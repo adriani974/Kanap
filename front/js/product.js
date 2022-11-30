@@ -281,13 +281,19 @@ class ManageLocalStorage{
         for (let i in this.productList) {
             if(this.productList[i].id == item.id && this.productList[i].color == item.color){
                 let newQuantity = Number(this.productList[i].quantity) + Number(getQuantity());
-                this.productList[i].quantity = newQuantity;
+                if(newQuantity > 100){
+                    newQuantity = 100;
+                    this.productList[i].quantity = newQuantity;
+                }else if(newQuantity < 1){
+                    newQuantity = 1;
+                    this.productList[i].quantity = newQuantity;
+                }else{
+                    this.productList[i].quantity = newQuantity;
+                }
+                
                 console.log("item new quantity : "+this.productList[i].quantity);
                 return false;
             }
-            console.log("item id : "+this.productList[i].id);
-            console.log("item color : "+this.productList[i].color);
-            console.log("item quantity : "+this.productList[i].quantity);
         }
         return true;
     }

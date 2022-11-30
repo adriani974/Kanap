@@ -55,8 +55,8 @@
  * Essais de se connecter à l'api products et récupèrent tous les produits de se dernier.
  * 
  */
-function connectToApiForAllProducts(){
-    fetch("http://localhost:3000/api/products")
+async function connectToApiForAllProducts(){
+    await fetch("http://localhost:3000/api/products")
         .then(function(res){
             if(res.ok){
                 return res.json();
