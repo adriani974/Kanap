@@ -246,11 +246,11 @@ function goToTheNextPage(){
  */
 function addProductIntoLocalStorage(){
     let manageLocalStorage = new ManageLocalStorage();
-    //manageLocalStorage.deleteAllDataInLocalStorage();
+    //manageLocalStorage.deleteAllDataInLocalStorage();/*
     manageLocalStorage.setProductKey(id_product);
     manageLocalStorage.getLocalStorageProducts();
     manageLocalStorage.addItemIntoProductList(id_product, valueColor, getQuantity());
-    manageLocalStorage.setLocalStorageProducts();  
+    manageLocalStorage.setLocalStorageProducts(); 
 }
 
 /**

@@ -1,7 +1,7 @@
 var id_product = null;
 var sofa_product = null;
 var item_product = null;
-var listOfProducts = null;
+var listOfProducts = [];
 var itemProductList = [];
 var listOfID = [];
 var totalPrice = 0;
@@ -26,78 +26,85 @@ function connectToApiForOneProduct(_produit, _position, _positionFinal){
             }
         })
         .then(function(value){
+            //Crée une instance de ProductSofa
             sofa_product = new ProductSofa(value);
 
-            //effectue une boucle afin de crée tous les éléments html pour chaque produit
+            //Effectue une boucle afin de crée tous les éléments html pour chaque produit
             for(let i = 0; i < _produit.length; i++){
                 produit_id = _produit[i].id;
                 produit_color = _produit[i].color;
                 produit_quantity = _produit[i].quantity;
                 createElementHtml(sofa_product, produit_id, produit_color, produit_quantity);
+
+                //Crée une instance de ProductItem que l'on ajoute ensuite au array produit_list
                 item_product = new ProductItem(sofa_product.getName(), produit_id, produit_color, Number(produit_quantity), sofa_product.getPrice());
                 produit_list.push(item_product);
             }
 
+            //Ajoute l'identifiant du produit dans le tableau listOfID, ajoute le tableau produit_list au tableau itemProductList
             listOfID.push(produit_id);
             itemProductList.push(produit_list);
             produit_list.clear;
 
-            //a la fin de la boucle, ajoute des écouteurs d'événements aux élement html conserné puis met à jour le prix final ainsi que la quantité.
+            //Une fois la condition exact, ont ajoute des écouteurs d'événements aux élements html conserné puis met à jour le prix final ainsi que la quantité.
             if(_position == _positionFinal){
-                console.log("c'est fini !");
-                try {
-                    addListenersToManageQuantity();
-                    countTotalPrice();
-                    updateTotalPrice();
-                    updateTotalQuantity();
-                } catch (error) {
-                    console.log("Une erreur c'est produite dans l'ecouteur de quantity :"+error);
-                } 
+                setTimeout(() => {
+                    try {
+                        addListenersToManageQuantity();
+                        addListenersToManageDelete();
+                        countTotalPrice();
+                        updateTotalPrice();
+                        updateTotalQuantity();
+                    } catch (error) {
+                        console.log("Une erreur c'est produite dans l'ecouteur de quantity :"+error);
+                    } 
+                  }, 1000) 
             }
-           
         })
-        .catch(function(err){
-            
+        .catch(function(err){    
             console.log("Une erreur c'est produite lors du chargements des produits :"+err);
         });
 }
 
 /**
- * Ajoutent des écouteurs d'évenement à chaque button modifiant la quantité d'un produit.
+ * Ajoutent des écouteurs d'évenement à chaque button modifiant la quantité du produit associer.
  */
 function addListenersToManageQuantity(){
+    //Récuperent tous les balises html ayant pour classe cart__item
     let button_quantity = document.querySelectorAll(".cart__item");
+
+    //Pour chaque élément récuperer, j'ajoute un listener qui permettra d'executer l'action de modifier la quantité du produit concerner
     button_quantity.forEach((button_quantity)=>{
         button_quantity.addEventListener("change", (event) => {
 
-            //récupèrent l'id et la couleur de l'élement
+            //Récupèrent l'id et la couleur issue des données dataset de l'élement
             let produit = button_quantity.closest("article");
             let produit_id = produit.dataset.id;
             let produit_color = produit.dataset.color;
 
-            //parcourent la liste des produits issue de l'api products
+            //Parcourent la liste des produits issue de l'api products
             for (const key in listOfProducts) {
                 let product = JSON.parse(listOfProducts[key]);
 
-                //parcourent product afin de trouver le produit ayant le même id et color que celle récupérer juste en haut
+                //Parcourent product afin de trouver le produit ayant le même id et color que celle récupérer juste en haut
                 for (const key in product) {
                     if (product[key].id === produit_id && product[key].color === produit_color){
-                        console.log("product:id --> "+product[key].id);
-                        console.log("product:color --> "+product[key].color);
-                        
-                        if(event.target.value > 100){
+                        //console.log("product:id --> "+product[key].id);
+                        //console.log("product:color --> "+product[key].color);
+                    
+                        if(event.target.value > 100){//Si la valeur actuel de la quantité est supérieur à 100, on l'initialisent à 100 puis on l'enregistre dans le localStorage
                             event.target.value = 100;
                             product[key].quantity = 100;
                             localStorage.setItem(produit_id, JSON.stringify(product));
                             updateQuantity(product[key].id, product[key].color, product[key].quantity);
 
-                        }else if(event.target.value < 1){
+                        }else if(event.target.value < 1){//Si la valeur actuel de la quantité est inférieur à 1, on l'initialisent à 1 puis on l'enregistre dans le localStorage
                             event.target.value = 1;
                             product[key].quantity = 1;
                             localStorage.setItem(produit_id, JSON.stringify(product));
                             updateQuantity(product[key].id, product[key].color, product[key].quantity);
 
-                        }else{
+                        }else{//Sinon on enregistre la valeur actuel dans le localStorage
                             product[key].quantity = Number(event.target.value);
                             localStorage.setItem(produit_id, JSON.stringify(product));
                             updateQuantity(product[key].id, product[key].color, product[key].quantity);
@@ -117,33 +124,156 @@ function addListenersToManageQuantity(){
 }
 
 /**
+ * Ajoutent des écouteurs d'évenement à chaque button pour supprimer le produit associer.
+ */
+function addListenersToManageDelete(){
+    //Récuperent tous les balises html ayant pour classe cart__item et deleteItem
+    let button_delete = document.querySelectorAll(".cart__item .deleteItem");
+
+    //Pour chaque élément récuperer, j'ajoute un listener qui permettra d'executer l'action de supprimer le produit concerner
+    for (let i = 0; i < button_delete.length; i++) {
+        button_delete[i].addEventListener("click", () => {
+             //récupèrent l'id et la couleur de l'élement
+             let produit = button_delete[i].closest("article");
+             let produit_id = produit.dataset.id;
+             let produit_color = produit.dataset.color;
+
+             //parcourent la liste des produits issue de l'api products
+            for (const key in listOfProducts) {
+                let product = JSON.parse(listOfProducts[key]);
+
+                //parcourent product afin de trouver le produit ayant le même id et color que celle récupérer juste en haut
+                for (const key in product) {
+                    if (product[key].id === produit_id && product[key].color === produit_color){
+                        //supprime le produit et met à jour la suppression dans la page html
+                        updateDelete(produit, product[key].id, product[key].color);
+                    }
+                }
+            }
+        });
+    }
+}
+
+/**
+ * Met à jour la suppression d'un produit de la liste itemProductList.
+ * @param { String } _id l'id du produit.
+ * @param { String } _color la couleur du produit.
+ */
+ function updateDelete(_produit, _id, _color){
+    
+    //removeItemFromLocalStorage(_produit, _id, _color);
+    removeItemFromListOfProduits();
+    //removeItemFromHtml(_id, _color);
+}
+
+function removeItemFromLocalStorage(_id, _color){
+    console.log("<-- removeItemFromLocalStorage -->");
+    let position = 0;
+    let items = localStorage.getItem(_id);
+    let itemsJson = JSON.parse(items);
+    let itemList = [];
+    let itemListFinal = [];
+    
+    if(items.length == 1){// ont retire directement l'item de localStorage
+        localStorage.removeItem(_id);
+        console.log("items == 1 --> true");
+    }else{
+        //ont récupère la position de l'item
+        for(let i = 0; i < itemsJson.length; i++){
+            console.log(" items.color : "+itemsJson[i].color); 
+            console.log(" _color : "+_color); 
+            if(itemsJson[i].color === _color){//ont enregistrent tout les produits sauf celui que l'ont à supprimer.
+                
+                
+                console.log(" ok ");   
+            }else{
+                itemListFinal.push(itemsJson[i]);
+                console.log(" pas ok "); 
+            }
+            console.log(" itemlistfinal  --> "+i);
+            console.log(itemListFinal);    
+        }
+       
+        
+        itemList.clear;
+
+        //ont transforme la liste obtenue en format Json
+        
+        localStorage.setItem(_id, JSON.stringify(itemListFinal));
+
+        console.log("item trouvé à la position --> "+position);
+        console.log(JSON.stringify(itemListFinal));
+      
+        console.log("items != 1 --> true");
+    }
+    
+}
+
+function removeItemFromListOfProduits(_id, _color){
+    console.log("itemProductList.length --> "+itemProductList.length);
+    /*if(itemProductList.length == 1){
+       
+        console.log("items == 1 --> true");
+    }else{
+        //ont récupère la position de l'item
+       
+        console.log("items != 1 --> true");
+    }*/
+    itemProductList.forEach(element => {
+        console.log(" element taille -->"+element.length);
+        if(element.length == 1){
+            if(produit.getID() == _id && produit.getColor() == _color){//ont additionnent tous les quantité des produits ayant la même id
+                console.log("produit trouvé -> "+produit.getName());
+                
+            } 
+        }else if (element.length > 1){
+            /*
+            element.forEach(produit => {
+                console.log("name -> "+produit.getName());
+                console.log("color -> "+produit.getColor());
+                if(produit.getID() == _id && produit.getColor() == _color){//ont additionnent tous les quantité des produits ayant la même id
+                    console.log("produit trouvé -> "+produit.getName());
+                }     
+            });*/
+        }
+        
+    });
+    
+}
+
+function removeItemFromHtml(_produit){
+    _produit.remove();
+}
+
+
+/**
  * Additionnent tous les produits de la même catégorie pour avoir la quantité et le prix total de l'ensemble des produits
  */
-async function countTotalPrice(){
-    let numGroup = 1;
+function countTotalPrice(){
     let quantity = 0;
     let quantityList = [];
     let priceList = [];
     let price = 0;
     let newTotalPrice = 0;
     let positionId = 0;
-
+    priceList.clear;
+    quantityList.clear;
+    //Pour chaque produit de chaque element de itemProductList on vérifie si l'identifiant du produit est la même que celle de listOfID
     itemProductList.forEach(element => {
-
+        //console.log(" element taille -->"+element.length);
         element.forEach(produit => {
-            if(produit.getID() == listOfID[positionId]){//ont additionnent tous les quantité des produits ayant la même id
+            if(produit.getID() == listOfID[positionId]){//Si l'identifiant du produit est la même que celle de listOfID, alors ont additionnent tous les quantité des produits ayant la même id et on récupere le prix
                 quantity = quantity + Number(produit.getQuantity());
                 price = price + Number(produit.getPrice());
             }
-            //console.log("name -> "+produit.getName());
-            //console.log("color -> "+produit.getColor());
-            //console.log("quantity -> "+produit.getQuantity());
+            console.log("name -> "+produit.getName());
+            console.log("color -> "+produit.getColor());
+            console.log("quantity -> "+produit.getQuantity());
         });
 
         priceList.push(price);
         quantityList.push(quantity);
         positionId++;
-        numGroup++;
         quantity = 0;
         price = 0;
     });
@@ -155,14 +285,16 @@ async function countTotalPrice(){
     });
 
     //ont fait l'addition du prix x la quantité de produit issue d'un même catégorie  afin d'obtenir le prix total de tous les produits
-    priceList.forEach(element => {
-        console.log(" priceInList --> "+element);
-    });
-
     for(let i = 0; i < priceList.length; i++){
         newTotalPrice = Number(priceList[i]) * Number(quantityList[i]);
         totalPrice = totalPrice + newTotalPrice;
     }
+
+    priceList.forEach(element => {
+        console.log(" priceInList --> "+element);
+    });
+
+    console.log(">-- countTotalPrice --<");
 }
 
 /**
@@ -171,11 +303,12 @@ async function countTotalPrice(){
  * @param { String } _color la couleur du produit.
  * @param { Number } _quantity la quantité du produit.
  */
-async function updateQuantity(_id, _color, _quantity){
+function updateQuantity(_id, _color, _quantity){
+    //Pour chaque produit de chaque element de itemProductList on vérifie si l'identifiant et la couleur du produit est la même que ceux recu en paramétre 
     itemProductList.forEach(element => {
 
         element.forEach(produit => {
-            if(produit.getID() == _id && produit.getColor() == _color){
+            if(produit.getID() == _id && produit.getColor() == _color){//Si la condition est vraie, alors on appelle la fonction setQuantity qui modifira la quantité du produit concerner
                 produit.setQuantity(Number(_quantity));
             } 
         });
@@ -185,24 +318,24 @@ async function updateQuantity(_id, _color, _quantity){
 /**
  * Met à jour le prix dans la page html.
  */
-async function updateTotalPrice(){
+function updateTotalPrice(){
     document.querySelector("#totalPrice").innerHTML = totalPrice; 
 }
 
 /**
  * Met à jour la quantité dans la page html.
  */
-async function updateTotalQuantity(){
+function updateTotalQuantity(){
     document.querySelector("#totalQuantity").innerHTML = totalQuantity; 
 }
 
 /**
  * Classe modélisant un produit.
- * @param { String } _name modèle de produit.
- * @param { String } _id modèle de produit.
- * @param { String } _color modèle de produit.
- * @param { Number } _quantity modèle de produit.
- * @param { Number } _price modèle de produit.
+ * @param { String } _name le nom du produit.
+ * @param { String } _id l'identifiant du produit.
+ * @param { String } _color la couleur du produit.
+ * @param { Number } _quantity la quantité du produit.
+ * @param { Number } _price le prix produit.
  */
  class ProductItem{
     constructor(_name, _id, _color, _quantity, _price){
@@ -322,7 +455,7 @@ class ManageLocalStorage{
     deleteAllDataInLocalStorage(){localStorage.clear();}
     
     /**
-    * Vérifie si le produit et la même couleur est déjà enregistrer dans le localStorage dans ce cas ont enregistre seulement la quantité.
+    * Vérifie si le produit avec la même couleur est déjà enregistrer dans le localStorage dans ce cas ont enregistre seulement la quantité, sinon on enregistre le nouveau produit dans le localStorage
     * @param { Array } item Correspond au produit actuel de la page.
     * @return { Boolean } Renvoie false si le même produit et la même couleur existe dans le localStorage sinon renvoie true.
     */
@@ -576,22 +709,26 @@ function elementHtml_Div__cartItem_contentSettings_delete(){
 }
 
 /****************************************************************************************** */
+//Crée une instance de la classe
 var manageLocalStorage = new ManageLocalStorage();
 
+//Récupèrent tous les items contenue dans le localStorage
 listOfProducts = manageLocalStorage.getAllLocalStorage();
 
-//Récupèrent une Promise pour l'ensemble de produit
+//Récupèrent une Promise pour l'ensemble de produit issue du panier et donc du localStorage
 Promise.all([listOfProducts])
   .then(response => {
         let position = 1;
         let positionFinal = 0;
         itemProductList.clear;
         listOfID.clear;
-        //récupèrent 
+        totalPrice = 0;
+        totalQuantity = 0;
+        //Comptent le nombre d'élément qui se trouvent dans listOfProducts
         for (let i in listOfProducts) {
             positionFinal++;
         }
-        
+        //On récupère un element de listOfProducts que l'on envoie comme paramètre pour la fonction connectToApiForOneProduct
         for (let id in listOfProducts) {
             let produit = JSON.parse(listOfProducts[id]);
             this.id_product = id;
