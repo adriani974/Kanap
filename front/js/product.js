@@ -250,7 +250,7 @@ function addProductIntoLocalStorage(){
     manageLocalStorage.setProductKey(id_product);
     manageLocalStorage.getLocalStorageProducts();
     manageLocalStorage.addItemIntoProductList(id_product, valueColor, getQuantity());
-    manageLocalStorage.setLocalStorageProducts(); 
+    manageLocalStorage.setLocalStorageProducts();
 }
 
 /**
