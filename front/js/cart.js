@@ -29,7 +29,7 @@ function connectToApiForOneProduct(_produit, _position, _positionFinal){
             //Crée une instance de ProductSofa
             sofa_product = new ProductSofa(value);
 
-            //Effectue une boucle afin de crée tous les éléments html pour chaque produit
+            //Effectue une boucle afin de crée tous les éléments html pour chaque produit d'un même catégorie "id"
             for(let i = 0; i < _produit.length; i++){
                 produit_id = _produit[i].id;
                 produit_color = _produit[i].color;
@@ -38,13 +38,11 @@ function connectToApiForOneProduct(_produit, _position, _positionFinal){
 
                 //Crée une instance de ProductItem que l'on ajoute ensuite au array produit_list
                 item_product = new ProductItem(sofa_product.getName(), produit_id, produit_color, Number(produit_quantity), sofa_product.getPrice());
-                produit_list.push(item_product);
+                itemProductList.push(item_product);
             }
 
             //Ajoute l'identifiant du produit dans le tableau listOfID, ajoute le tableau produit_list au tableau itemProductList
             listOfID.push(produit_id);
-            itemProductList.push(produit_list);
-            produit_list.clear;
 
             //Une fois la condition exact, ont ajoute des écouteurs d'événements aux élements html conserné puis met à jour le prix final ainsi que la quantité.
             if(_position == _positionFinal){
@@ -150,97 +148,86 @@ function addListenersToManageDelete(){
                     }
                 }
             }
+            //initialisent les variables totalPrice et totalQuantity puis remet à jour les nouvelles données
+            totalPrice = 0;
+            totalQuantity = 0;
+            countTotalPrice();
+            updateTotalPrice();
+            updateTotalQuantity();
         });
     }
 }
 
 /**
- * Met à jour la suppression d'un produit de la liste itemProductList.
- * @param { String } _id l'id du produit.
+ * Met à jour la suppression d'un produit.
+ * @param { ProductItem } _produit Une instance du produit.
+ * @param { String } _id l'identifiant du produit.
  * @param { String } _color la couleur du produit.
  */
- function updateDelete(_produit, _id, _color){
-    
-    //removeItemFromLocalStorage(_produit, _id, _color);
-    removeItemFromListOfProduits();
-    //removeItemFromHtml(_id, _color);
+ function updateDelete(_produit, _id, _color){   
+    removeItemFromLocalStorage(_id, _color);
+    removeItemFromListOfProduits(_id, _color);
+    removeItemFromHtml(_produit);
 }
 
+/**
+ * Supprime un produit du localStorage.
+ * @param { String } _id l'identifiant du produit.
+ * @param { String } _color la couleur du produit.
+ */
 function removeItemFromLocalStorage(_id, _color){
-    console.log("<-- removeItemFromLocalStorage -->");
     let position = 0;
     let items = localStorage.getItem(_id);
     let itemsJson = JSON.parse(items);
     let itemList = [];
     let itemListFinal = [];
     
-    if(items.length == 1){// ont retire directement l'item de localStorage
+    if(itemsJson.length == 1){// ont retire directement l'item de localStorage
         localStorage.removeItem(_id);
-        console.log("items == 1 --> true");
+       
     }else{
         //ont récupère la position de l'item
         for(let i = 0; i < itemsJson.length; i++){
-            console.log(" items.color : "+itemsJson[i].color); 
-            console.log(" _color : "+_color); 
-            if(itemsJson[i].color === _color){//ont enregistrent tout les produits sauf celui que l'ont à supprimer.
+            
+            if(itemsJson[i].color === _color){//Si un produit correspond aux paramètres id et color, alors l'ignore.
                 
-                
-                console.log(" ok ");   
-            }else{
+            }else{//Sinon on enregistre le produit dans une nouvelle liste temporaire
                 itemListFinal.push(itemsJson[i]);
-                console.log(" pas ok "); 
-            }
-            console.log(" itemlistfinal  --> "+i);
-            console.log(itemListFinal);    
+            }   
         }
-       
         
         itemList.clear;
 
         //ont transforme la liste obtenue en format Json
-        
         localStorage.setItem(_id, JSON.stringify(itemListFinal));
-
-        console.log("item trouvé à la position --> "+position);
-        console.log(JSON.stringify(itemListFinal));
-      
-        console.log("items != 1 --> true");
     }
     
 }
 
+/**
+ Supprime un produit de itemOfProductList.
+ * @param { String } _id l'identifiant du produit.
+ * @param { String } _color la couleur du produit.
+ */
 function removeItemFromListOfProduits(_id, _color){
-    console.log("itemProductList.length --> "+itemProductList.length);
-    /*if(itemProductList.length == 1){
-       
-        console.log("items == 1 --> true");
-    }else{
-        //ont récupère la position de l'item
-       
-        console.log("items != 1 --> true");
-    }*/
-    itemProductList.forEach(element => {
-        console.log(" element taille -->"+element.length);
-        if(element.length == 1){
-            if(produit.getID() == _id && produit.getColor() == _color){//ont additionnent tous les quantité des produits ayant la même id
-                console.log("produit trouvé -> "+produit.getName());
-                
-            } 
-        }else if (element.length > 1){
-            /*
-            element.forEach(produit => {
-                console.log("name -> "+produit.getName());
-                console.log("color -> "+produit.getColor());
-                if(produit.getID() == _id && produit.getColor() == _color){//ont additionnent tous les quantité des produits ayant la même id
-                    console.log("produit trouvé -> "+produit.getName());
-                }     
-            });*/
-        }
-        
+   let newList = [];
+
+    itemProductList.forEach(produit => {
+        if(produit.getID() == _id && produit.getColor() == _color){//Si la condition est vraie, ont fait rien
+            
+        }else{//sinon on enregistre le produit dans une liste temporaire
+            newList.push(produit);
+        } 
     });
-    
+    //Puis je modifie itemProductList avec la nouvelle liste temporaire
+    itemProductList = newList;
+    newList.clear;
 }
 
+/**
+ * Supprime un produit de la page html.
+ * @param { ProductItem } _produit Une instance du produit.
+ */
 function removeItemFromHtml(_produit){
     _produit.remove();
 }
@@ -258,29 +245,29 @@ function countTotalPrice(){
     let positionId = 0;
     priceList.clear;
     quantityList.clear;
-    //Pour chaque produit de chaque element de itemProductList on vérifie si l'identifiant du produit est la même que celle de listOfID
-    itemProductList.forEach(element => {
-        //console.log(" element taille -->"+element.length);
-        element.forEach(produit => {
-            if(produit.getID() == listOfID[positionId]){//Si l'identifiant du produit est la même que celle de listOfID, alors ont additionnent tous les quantité des produits ayant la même id et on récupere le prix
-                quantity = quantity + Number(produit.getQuantity());
-                price = price + Number(produit.getPrice());
-            }
-            console.log("name -> "+produit.getName());
-            console.log("color -> "+produit.getColor());
-            console.log("quantity -> "+produit.getQuantity());
-        });
+    //Pour chaque produit de itemProductList on vérifie si l'identifiant du produit est la même que celle de listOfID
+    for (let index = 0; index < listOfID.length; index++) {
+        const elementID = listOfID[index];
 
+        itemProductList.forEach(produit => {
+            
+            if(produit.getID() == elementID){//Si l'identifiant du produit est la même que celle de listOfID, alors ont additionnent tous les quantité des produits ayant la même id et on récupere le prix
+                quantity = quantity + Number(produit.getQuantity());
+                price = Number(produit.getPrice());
+            }
+            
+        });
+        //ont enregistre les nouvelle données pour le priceList et quantityList
         priceList.push(price);
         quantityList.push(quantity);
-        positionId++;
-        quantity = 0;
+        //ont initialise les vaiable price et quantity à zero
         price = 0;
-    });
+        quantity = 0;
+    }
+    
 
     //ont additionnent chaque quantité afin d'obtenir la quantité total de produit
     quantityList.forEach(element => {
-        console.log(" quantityInList --> "+element);
         totalQuantity = totalQuantity + Number(element);
     });
 
@@ -290,11 +277,6 @@ function countTotalPrice(){
         totalPrice = totalPrice + newTotalPrice;
     }
 
-    priceList.forEach(element => {
-        console.log(" priceInList --> "+element);
-    });
-
-    console.log(">-- countTotalPrice --<");
 }
 
 /**
@@ -304,15 +286,13 @@ function countTotalPrice(){
  * @param { Number } _quantity la quantité du produit.
  */
 function updateQuantity(_id, _color, _quantity){
-    //Pour chaque produit de chaque element de itemProductList on vérifie si l'identifiant et la couleur du produit est la même que ceux recu en paramétre 
-    itemProductList.forEach(element => {
-
-        element.forEach(produit => {
-            if(produit.getID() == _id && produit.getColor() == _color){//Si la condition est vraie, alors on appelle la fonction setQuantity qui modifira la quantité du produit concerner
-                produit.setQuantity(Number(_quantity));
-            } 
-        });
+    //Pour chaque produit de itemProductList on vérifie si l'identifiant et la couleur du produit est la même que ceux recu en paramétre 
+    itemProductList.forEach(produit => {
+        if(produit.getID() == _id && produit.getColor() == _color){//Si la condition est vraie, alors on appelle la fonction setQuantity qui modifira la quantité du produit concerner
+            produit.setQuantity(Number(_quantity));
+        } 
     });
+   
 }
 
 /**
@@ -464,12 +444,9 @@ class ManageLocalStorage{
             if(this.productList[i].id == item.id && this.productList[i].color == item.color){
                 let newQuantity = Number(this.productList[i].quantity) + Number(getQuantity());
                 this.productList[i].quantity = newQuantity;
-                console.log("item new quantity : "+this.productList[i].quantity);
+               
                 return false;
             }
-            console.log("item id : "+this.productList[i].id);
-            console.log("item color : "+this.productList[i].color);
-            console.log("item quantity : "+this.productList[i].quantity);
         }
         return true;
     }
