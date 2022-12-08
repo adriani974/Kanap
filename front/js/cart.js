@@ -1,17 +1,17 @@
 var id_product = null;
 var sofa_product = null;
 var item_product = null;
-var listOfProducts = [];
-var itemProductList = [];
+var listOfItems_fromApiProduct = [];
+var listOfItems_ProductItem = [];
 var listOfID = [];
 var totalPrice = 0;
 var totalQuantity = 0;
 
 /**
  * Essais de se connecter à l'api products et récupère un produit à partir de son id.
- * @param { any } _produit un modèle de produit issue de localStorage.
- * @param { any } _position correspond au tour actuel à l'intérieur d'une boucle.
- * @param { any } _positionFinal correspond au dernier tour à l'intérieur d'une boucle.
+ * @param { any } _produit Un modèle de produit issue de localStorage.
+ * @param { any } _position Correspond au tour actuel à l'intérieur d'une boucle.
+ * @param { any } _positionFinal Correspond au dernier tour à l'intérieur d'une boucle.
  */
 function connectToApiForOneProduct(_produit, _position, _positionFinal){
     let produit_id = null;
@@ -36,12 +36,12 @@ function connectToApiForOneProduct(_produit, _position, _positionFinal){
                 produit_quantity = _produit[i].quantity;
                 createElementHtml(sofa_product, produit_id, produit_color, produit_quantity);
 
-                //Crée une instance de ProductItem que l'on ajoute ensuite au array produit_list
+                //Crée une instance de ProductItem que l'on ajoute ensuite au tableau listOfItems_ProductItem
                 item_product = new ProductItem(sofa_product.getName(), produit_id, produit_color, Number(produit_quantity), sofa_product.getPrice());
-                itemProductList.push(item_product);
+                listOfItems_ProductItem.push(item_product);
             }
 
-            //Ajoute l'identifiant du produit dans le tableau listOfID, ajoute le tableau produit_list au tableau itemProductList
+            //Ajoute l'identifiant du produit dans le tableau listOfID, ajoute le tableau produit_list au tableau listOfItems_ProductItem
             listOfID.push(produit_id);
 
             //Une fois la condition exact, ont ajoute des écouteurs d'événements aux élements html conserné puis met à jour le prix final ainsi que la quantité.
@@ -50,6 +50,7 @@ function connectToApiForOneProduct(_produit, _position, _positionFinal){
                     try {
                         addListenersToManageQuantity();
                         addListenersToManageDelete();
+                        validAnOrder();
                         countTotalPrice();
                         updateTotalPrice();
                         updateTotalQuantity();
@@ -81,8 +82,8 @@ function addListenersToManageQuantity(){
             let produit_color = produit.dataset.color;
 
             //Parcourent la liste des produits issue de l'api products
-            for (const key in listOfProducts) {
-                let product = JSON.parse(listOfProducts[key]);
+            for (const key in listOfItems_fromApiProduct) {
+                let product = JSON.parse(listOfItems_fromApiProduct[key]);
 
                 //Parcourent product afin de trouver le produit ayant le même id et color que celle récupérer juste en haut
                 for (const key in product) {
@@ -137,8 +138,8 @@ function addListenersToManageDelete(){
              let produit_color = produit.dataset.color;
 
              //parcourent la liste des produits issue de l'api products
-            for (const key in listOfProducts) {
-                let product = JSON.parse(listOfProducts[key]);
+            for (const key in listOfItems_fromApiProduct) {
+                let product = JSON.parse(listOfItems_fromApiProduct[key]);
 
                 //parcourent product afin de trouver le produit ayant le même id et color que celle récupérer juste en haut
                 for (const key in product) {
@@ -205,22 +206,22 @@ function removeItemFromLocalStorage(_id, _color){
 }
 
 /**
- Supprime un produit de itemOfProductList.
+ Supprime un produit de listOfItems_ProductItem.
  * @param { String } _id l'identifiant du produit.
  * @param { String } _color la couleur du produit.
  */
 function removeItemFromListOfProduits(_id, _color){
    let newList = [];
 
-    itemProductList.forEach(produit => {
+    listOfItems_ProductItem.forEach(produit => {
         if(produit.getID() == _id && produit.getColor() == _color){//Si la condition est vraie, ont fait rien
             
         }else{//sinon on enregistre le produit dans une liste temporaire
             newList.push(produit);
         } 
     });
-    //Puis je modifie itemProductList avec la nouvelle liste temporaire
-    itemProductList = newList;
+    //Puis je modifie listOfItems_ProductItem avec la nouvelle liste temporaire
+    listOfItems_ProductItem = newList;
     newList.clear;
 }
 
@@ -245,11 +246,11 @@ function countTotalPrice(){
     let positionId = 0;
     priceList.clear;
     quantityList.clear;
-    //Pour chaque produit de itemProductList on vérifie si l'identifiant du produit est la même que celle de listOfID
+    //Pour chaque produit de listOfItems_ProductItem on vérifie si l'identifiant du produit est la même que celle de listOfID
     for (let index = 0; index < listOfID.length; index++) {
         const elementID = listOfID[index];
 
-        itemProductList.forEach(produit => {
+        listOfItems_ProductItem.forEach(produit => {
             
             if(produit.getID() == elementID){//Si l'identifiant du produit est la même que celle de listOfID, alors ont additionnent tous les quantité des produits ayant la même id et on récupere le prix
                 quantity = quantity + Number(produit.getQuantity());
@@ -286,8 +287,8 @@ function countTotalPrice(){
  * @param { Number } _quantity la quantité du produit.
  */
 function updateQuantity(_id, _color, _quantity){
-    //Pour chaque produit de itemProductList on vérifie si l'identifiant et la couleur du produit est la même que ceux recu en paramétre 
-    itemProductList.forEach(produit => {
+    //Pour chaque produit de listOfItems_ProductItem on vérifie si l'identifiant et la couleur du produit est la même que ceux recu en paramétre 
+    listOfItems_ProductItem.forEach(produit => {
         if(produit.getID() == _id && produit.getColor() == _color){//Si la condition est vraie, alors on appelle la fonction setQuantity qui modifira la quantité du produit concerner
             produit.setQuantity(Number(_quantity));
         } 
@@ -310,12 +311,165 @@ function updateTotalQuantity(){
 }
 
 /**
+ * Effectuent une vérification pour chaque champs du formulaire.
+ * @param { String } _firstName Le prénom de l'utilisateur.
+ * @param { String } _lastName Le nom de l'utilisateur.
+ * @param { String } _address L'adresse de l'utilisateur.
+ * @param { String } _city La ville de l'utilisateur.
+ * @param { String } _email L'email de l'utilisateur.
+ * @return { Boolean } renvoie true si tout les champs sont valide, sinon renvoie false.
+ */
+function checkInputForm(_firstName, _lastName, _address, _city, _email){
+    //Ici je récupèrent tous les éléments html permettant d'afficher un message d'erreur relatif au champs du formulaire associé
+    let firstName_errorMessage = document.getElementById('firstNameErrorMsg');
+    let lastName_errorMessage = document.getElementById('lastNameErrorMsg');
+    let address_errorMessage = document.getElementById('addressErrorMsg');
+    let city_errorMessage = document.getElementById('cityErrorMsg');
+    let email_errorMessage = document.getElementById('emailErrorMsg');
+
+    //Je crée les filtres pour champs du formulaire
+    const firstNameRGEX = /^([A-Za-z-\s]{3,})+$/;
+    const lastNameRGEX = firstNameRGEX;
+    const addressRGEX = /^([A-Za-z0-9]+( [A-Za-z0-9]+)+)+$/ ;
+    const cityRGEX = firstNameRGEX;
+    const emailRGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+
+    //Test chaque champ afin de vérifier leur validité, si un champ est valide ont incrémente la variable countTotalFieldValid
+    let firstNameResult = firstNameRGEX.test(_firstName);
+    if(!firstNameResult)
+    {
+      firstName_errorMessage.innerHTML = 'Veuillez entrez un prénom valide';
+    }else{
+      firstName_errorMessage.innerHTML = ' '; 
+    }
+
+    let lastNameResult = lastNameRGEX.test(_lastName);
+    if(!lastNameResult)
+    {
+      lastName_errorMessage.innerHTML = 'Veuillez entrez un nom valide';
+    }else{
+      lastName_errorMessage.innerHTML = ' ';
+    }
+
+    let addressResult = addressRGEX.test(_address);
+    if(!addressResult)
+    {
+      address_errorMessage.innerHTML = 'Veuillez entrez une adresse valide';
+    }else{
+        address_errorMessage.innerHTML = ' '; 
+    }
+
+    let cityResult = cityRGEX.test(_city);
+    if(!cityResult)
+    {
+      city_errorMessage.innerHTML = 'Veuillez entrez le nom d\'une ville valide';
+    }else{
+      city_errorMessage.innerHTML = ' '; 
+    }
+
+    let emailResult = emailRGEX.test(_email);
+    if(!emailResult)
+    {
+      email_errorMessage.innerHTML = 'Veuillez entrez un email valide';
+    }else{
+      email_errorMessage.innerHTML = ' '; 
+    }
+
+
+    //Si tous les champs sont valide ont renvoie true, sinon ont renvoie false
+    if(firstNameResult == true && lastNameResult == true && addressResult == true && cityResult == true && emailResult == true){
+        console.log("tout les champs sont valide");
+        return true;
+    }else{
+        console.log("tout les champs sont pas valide");
+        return false;
+    }
+    
+}
+
+/**
+ * Vérifient les données du formulaire puis, envoie l'utilisateur vers la page de confirmation.
+ */
+function validAnOrder(){
+    //Je récupèrent tous les champs du formulaire
+    let firstName = document.getElementById('firstName');
+    let lastName = document.getElementById('lastName');
+    let address = document.getElementById('address');
+    let city = document.getElementById('city');
+    let email = document.getElementById('email');
+    
+    
+    let button_order = document.querySelector("#order");
+
+    button_order.addEventListener("click", (event) => {
+        event.preventDefault();
+        //Si tout les données du formulaire sont valide
+        if(checkInputForm(firstName.value, lastName.value, address.value, city.value, email.value)){
+            alert("tout les champs sont valident !");
+            //On crée un objet de Contact auquel ont ajoutera comme paramètre les données du formulaire validé
+            //const contact = new Contact(firstName.value, lastName.value, address.value, city.value, email.value);
+            //window.location = "./confirmation.html";
+
+        }
+       
+    });
+}
+
+/**
+ * Enregistrent les informations de l'utilisateur via le formulaire de la page cart.html.
+ * @param { String } _firstName Le prénom de l'utilisateur.
+ * @param { String } _lastName Le nom de l'utilisateur.
+ * @param { String } _address L'adresse de l'utilisateur.
+ * @param { String } _city La ville de l'utilisateur.
+ * @param { String } _email L'email de l'utilisateur.
+ */
+class Contact{
+    constructor(_firstName, _lastName, _address, _city, _email){
+        this.firstName = _firstName;
+        this.lastName = _lastName;
+        this.address = _address;
+        this.city = _city;
+        this.email = _email;
+    }
+
+    /**
+     * Retourne le prénom de l'utilisateur.
+     * @return { String } Le prénom de l'utilisateur.
+     */
+     getFirstName(){return this.firstName;}
+
+     /**
+     * Retourne le nom de l'utilisateur.
+     * @return { String } Le nom de l'utilisateur.
+     */
+      getLastName(){return this.lastName;}
+
+    /**
+     * Retourne l'adresse de l'utilisateur.
+     * @return { String } L'adresse de l'utilisateur.
+     */
+     getAdress(){return this.adress;}
+
+     /**
+     * Retourne la ville de l'utilisateur.
+     * @return { String } La ville de l'utilisateur.
+     */
+      getCity(){return this.city;}
+    
+    /**
+     * Retourne l'email de l'utilisateur.
+     * @return { String } L'email de l'utilisateur.
+     */
+     getEmail(){return this.email;}
+}
+
+/**
  * Classe modélisant un produit.
- * @param { String } _name le nom du produit.
- * @param { String } _id l'identifiant du produit.
- * @param { String } _color la couleur du produit.
- * @param { Number } _quantity la quantité du produit.
- * @param { Number } _price le prix produit.
+ * @param { String } _name Le nom du produit.
+ * @param { String } _id L'identifiant du produit.
+ * @param { String } _color La couleur du produit.
+ * @param { Number } _quantity La quantité du produit.
+ * @param { Number } _price Le prix produit.
  */
  class ProductItem{
     constructor(_name, _id, _color, _quantity, _price){
@@ -365,7 +519,7 @@ function updateTotalQuantity(){
 
 /**
  * Classe modélisant les produits de type sofa.
- * @param { object } sofa modèle de sofa.
+ * @param { object } sofa Modèle de sofa.
  */
  class ProductSofa{
     constructor(_sofa){
@@ -417,9 +571,9 @@ function updateTotalQuantity(){
 
 /**
  * Classe permettant de gérer les données du localStorage.
- * @param { any } _id l'identifiant du produit.
- * @param { any } _color la couleur du produit.
- * @param { any } _quantity la quantité du produit.
+ * @param { any } _id L'identifiant du produit.
+ * @param { any } _color La couleur du produit.
+ * @param { any } _quantity La quantité du produit.
  */
 class ManageLocalStorage{
     productList = [];
@@ -453,13 +607,13 @@ class ManageLocalStorage{
 
     /**
      * Ajoute le produit dans la liste.
-     * @param { any } _id l'identifiant du produit.
-     * @param { any } _color la couleur du produit.
-     * @param { any } _quantity la quantité du produit.
+     * @param { any } _id L'identifiant du produit.
+     * @param { any } _color La couleur du produit.
+     * @param { any } _quantity La quantité du produit.
      */
     addItemIntoProductList(_id, _color, _quantity){
         let item = {id: _id, color: _color, quantity: _quantity};
-        
+
         if(this.checkSameIDAndColor(item)){
             this.productList.push(item);
         }
@@ -524,10 +678,6 @@ class ManageLocalStorage{
     */
     setLocalStorage_RemoveItem(value){localStorage.removeItem(value);}
    
-    getLocalStorage_Length(){return localStorage.length;}
-
-
-    getLocalStorage_key(value){return localStorage.key(value);}
 }
 
 /********************************************************************************************* */
@@ -689,25 +839,25 @@ function elementHtml_Div__cartItem_contentSettings_delete(){
 //Crée une instance de la classe
 var manageLocalStorage = new ManageLocalStorage();
 
-//Récupèrent tous les items contenue dans le localStorage
-listOfProducts = manageLocalStorage.getAllLocalStorage();
+//Récupèrent tous les items contenue dans le localStorage et les ajoutent au tableau listOfItems_fromApiProduct 
+listOfItems_fromApiProduct = manageLocalStorage.getAllLocalStorage();
 
 //Récupèrent une Promise pour l'ensemble de produit issue du panier et donc du localStorage
-Promise.all([listOfProducts])
+Promise.all([listOfItems_fromApiProduct])
   .then(response => {
         let position = 1;
         let positionFinal = 0;
-        itemProductList.clear;
+        listOfItems_ProductItem.clear;
         listOfID.clear;
         totalPrice = 0;
         totalQuantity = 0;
-        //Comptent le nombre d'élément qui se trouvent dans listOfProducts
-        for (let i in listOfProducts) {
+        //Comptent le nombre d'élément qui se trouvent dans listOfItems_fromApiProduct
+        for (let i in listOfItems_fromApiProduct) {
             positionFinal++;
         }
-        //On récupère un element de listOfProducts que l'on envoie comme paramètre pour la fonction connectToApiForOneProduct
-        for (let id in listOfProducts) {
-            let produit = JSON.parse(listOfProducts[id]);
+        //On récupère un element de listOfItems_fromApiProduct que l'on envoie comme paramètre pour la fonction connectToApiForOneProduct
+        for (let id in listOfItems_fromApiProduct) {
+            let produit = JSON.parse(listOfItems_fromApiProduct[id]);
             this.id_product = id;
             connectToApiForOneProduct(produit, position, positionFinal);
             position++;
