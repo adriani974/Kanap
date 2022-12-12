@@ -414,6 +414,10 @@ function validAnOrder(){
     });
 }
 
+/**
+ * Tente une connection à l'api pour effectuer un post.
+ * @param { Contact } _contact objet de la classe Contact.
+ */
 async function connectToApiForPost(_contact){
     try {
         let response = await fetch("http://localhost:3000/api/products/order", {
@@ -429,7 +433,7 @@ async function connectToApiForPost(_contact){
           });
           
           let result = await response.json();
-          alert(" post :"+result);
+          //alert(" post :"+result);
           let orderId = result.orderId;
           manageLocalStorage.deleteAllDataInLocalStorage();
           window.location.assign("confirmation.html?id=" + orderId); 
