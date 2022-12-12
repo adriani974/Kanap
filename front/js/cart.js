@@ -57,7 +57,7 @@ function connectToApiForOneProduct(_produit, _position, _positionFinal){
                     } catch (error) {
                         console.log("Une erreur c'est produite dans l'ecouteur de quantity :"+error);
                     } 
-                  }, 1000) 
+                  }, 500) 
             }
         })
         .catch(function(err){    
@@ -334,7 +334,7 @@ function checkInputForm(_firstName, _lastName, _address, _city, _email){
     const cityRGEX = firstNameRGEX;
     const emailRGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
 
-    //Test chaque champ afin de vérifier leur validité, si un champ est valide ont incrémente la variable countTotalFieldValid
+    //Test chaque champ afin de vérifier leur validité
     let firstNameResult = firstNameRGEX.test(_firstName);
     if(!firstNameResult)
     {
@@ -405,14 +405,38 @@ function validAnOrder(){
         event.preventDefault();
         //Si tout les données du formulaire sont valide
         if(checkInputForm(firstName.value, lastName.value, address.value, city.value, email.value)){
-            alert("tout les champs sont valident !");
+            //alert("tout les champs sont valident !");
             //On crée un objet de Contact auquel ont ajoutera comme paramètre les données du formulaire validé
-            //const contact = new Contact(firstName.value, lastName.value, address.value, city.value, email.value);
-            //window.location = "./confirmation.html";
-
+            const contact = new Contact(firstName.value, lastName.value, address.value, city.value, email.value);
+            connectToApiForPost(contact);
         }
        
     });
+}
+
+async function connectToApiForPost(_contact){
+    try {
+        let response = await fetch("http://localhost:3000/api/products/order", {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            
+            body: JSON.stringify({
+                contact: _contact,
+                products: listOfID,
+              }),
+          });
+          
+          let result = await response.json();
+          alert(" post :"+result);
+          let orderId = result.orderId;
+          manageLocalStorage.deleteAllDataInLocalStorage();
+          window.location.assign("confirmation.html?id=" + orderId); 
+    } catch (error) {
+        console.log("erreur à l\'envoie de donnee post : "+error);
+    }
+    
 }
 
 /**
