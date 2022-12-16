@@ -1,11 +1,9 @@
-var id_product = getIdFromUrlParams();
-var select_colors = null;
-var valueColor = null;
+
 /**
  * Récupére l'identifiant du produit à partir de l'adresse url de la page.
  * @return { any } id du produit.
  */
-function getIdFromUrlParams(){
+function getIdFromUrlParams() {
     let str = window.location.href;
     let url = new URL(str);
     return url.searchParams.get("id");   
@@ -63,6 +61,11 @@ function getIdFromUrlParams(){
     getAltTxt(){return this.sofa.altTxt;}  
 }
 
+/***************************************************************************************** */
+var id_product = getIdFromUrlParams();
+var select_colors = null;
+var valueColor = null;
+
 /**
  * Essais de se connecter à l'api products et récupère un produit à partir de son id.
  */
@@ -106,69 +109,37 @@ function messageInformations(number) {
     alert(message);
 }
 
+
 /**
  * Met à jour les informations sur le produit selectionner à partir de la page d'acceuil.
  * @param { ProductSofa } sofa Un modèle de produit de type sofa.
  */
 function updateInformations(sofa){
-    updateDiv_img(sofa);
-    updateDiv_titlePrice(sofa);
-    updateDiv_description(sofa);
-    updateDiv_color(sofa);
-    updateDiv_addButton();
-}
-
-/**
- * Met à jour les informations pour la div contenant l'image du produit.
- * @param { ProductSofa } sofa Un modèle de produit de type sofa.
- */
-function updateDiv_img(sofa){
     //Récupèrent les éléments html à partir de leur id.
     const item_img = document.getElementsByClassName("item__img");
     const element_img = document.createElement("img");
-
+    const h1_title = document.getElementById("title");
+    const span_price = document.getElementById("price");
+    const p_description = document.getElementById("description");
+    select_colors = document.getElementById("colors");
+    const button_addToCart = document.getElementById("addToCart");
+ 
     //modifie les attributs
     element_img.setAttribute("src", sofa.getImageURL());
     element_img.setAttribute("alt", sofa.getAltTxt());
 
-    //ajoute les balises enfants aux balises parents concernée
-    item_img[0].appendChild(element_img);
-}
-
-/**
- * Met à jour les informations pour la div contenant le titre ainsi que le prix du produit.
- * @param { ProductSofa } sofa Un modèle de produit de type sofa.
- */
-function updateDiv_titlePrice(sofa){
-    //Récupèrent les éléments html à partir de leur id.
-    const h1_title = document.getElementById("title");
-    const span_price = document.getElementById("price");
-
     //Insert un texte entre les balises concernés
     const title = document.createTextNode(sofa.getName());
     const price = document.createTextNode(sofa.getPrice());
+    const description = document.createTextNode(sofa.getDescription());
 
-    //ajoute les balises enfants aux balises parents concernée
+    //ajoute les balises enfants aux balises parents concernée.
+    item_img[0].appendChild(element_img);
     h1_title.appendChild(title);
     span_price.appendChild(price);
-}
+    p_description.appendChild(description); 
 
-/**
- * Met à jour les informations pour la div portant sur la description du produit.
- * @param { ProductSofa } sofa Un modèle de produit de type sofa.
- */
-function updateDiv_description(sofa){
-    const p_description = document.getElementById("description");
-    const description = document.createTextNode(sofa.getDescription());
-    p_description.appendChild(description);
-}
-
-/**
- * Met à jour les informations pour la div correspondant aux choix de couleurs pour le produit.
- * @param { ProductSofa } sofa Un modèle de produit de type sofa.
- */
-function updateDiv_color(sofa){
-    select_colors = document.getElementById("colors");
+    //création d'un tableau pour recevoir les différents couleurs disponible.
     const array_colors = sofa.getColors();
     let text = null;
     let element_option = [];
@@ -187,13 +158,6 @@ function updateDiv_color(sofa){
         valueColor = select_colors.options[select_colors.selectedIndex].value;
         event.stopPropagation();
     }, false);
-}
-
-/**
- * Ajoute un écouteur d'événement au bouton afin de valider les informations et passez à la page suivante.
- */
-function updateDiv_addButton(){
-    const button_addToCart = document.getElementById("addToCart");
 
     //un écouteur d'évenement pour le button
     button_addToCart.addEventListener("click",function(event){
@@ -203,42 +167,21 @@ function updateDiv_addButton(){
 }
 
 /**
- * Recoit la valeur de quantity.
- */
-function getQuantity(){
-    return document.getElementById("quantity").value;   
-}
-
-/**
- * Met à jour la valeur de quantity.
- */
-function setQuantity(){
-    document.getElementById("quantity").value = 0;   
-}
-
-/**
  * Effectue des vérifications afin de vérifier si les champs colors et quantity ont été correctement rempli par l'utilisateur.
  */
 function conditionValidation(){
+    let quantity = document.getElementById("quantity").value;
     if (select_colors.value == ""){
         messageInformations(1);
 
-    }else if( getQuantity() > 100 || getQuantity() == 0){
+    }else if( quantity > 100 || quantity == 0){
         messageInformations(0);
-        setQuantity();
+        document.getElementById("quantity").value = 1; 
 
     }else{
-        goToTheNextPage(); 
+        addProductIntoLocalStorage();
+        window.location = "./cart.html";
     }
-    
-}
-
-/**
- * Ajoute le produit au localStorage puis dirige l'utilisateur vers la page suivante.
- */
-function goToTheNextPage(){  
-    addProductIntoLocalStorage();
-    window.location = "./cart.html";
 }
 
 /**
@@ -246,10 +189,10 @@ function goToTheNextPage(){
  */
 function addProductIntoLocalStorage(){
     let manageLocalStorage = new ManageLocalStorage();
-    //manageLocalStorage.deleteAllDataInLocalStorage();/*
+    //localStorage.clear();/*
     manageLocalStorage.setProductKey(id_product);
     manageLocalStorage.getLocalStorageProducts();
-    manageLocalStorage.addItemIntoProductList(id_product, valueColor, getQuantity());
+    manageLocalStorage.addItemIntoProductList(id_product, valueColor, document.getElementById("quantity").value);
     manageLocalStorage.setLocalStorageProducts();
 }
 
@@ -263,14 +206,7 @@ class ManageLocalStorage{
     productList = [];
     productAllList = [];
     productKey = "";
-    constructor(){
-        
-    }
-
-    /**
-     * Efface toute les données contenue dans le localStorage.
-     */
-    deleteAllDataInLocalStorage(){localStorage.clear();}
+    constructor(){    }
     
     /**
     * Vérifie si le produit et la même couleur est déjà enregistrer dans le localStorage dans ce cas ont enregistre seulement la quantité.
@@ -280,7 +216,7 @@ class ManageLocalStorage{
     checkSameIDAndColor(item){
         for (let i in this.productList) {
             if(this.productList[i].id == item.id && this.productList[i].color == item.color){
-                let newQuantity = Number(this.productList[i].quantity) + Number(getQuantity());
+                let newQuantity = Number(this.productList[i].quantity) + Number(document.getElementById("quantity").value);
                 if(newQuantity > 100){
                     newQuantity = 100;
                     this.productList[i].quantity = newQuantity;
@@ -322,8 +258,7 @@ class ManageLocalStorage{
 
         } catch (error) {
              console.log(" un erreur c'est produite lors du sauvegarde dans le localStorage "+error);
-        }
-        
+        }  
     }
 
     /**
@@ -331,7 +266,6 @@ class ManageLocalStorage{
      * @param { String } _productKey  L'identifiant d'un produit.
      */
     setProductKey(_productKey){ this.productKey = _productKey;}
-
     
     /**
      * Récupère la liste du produit depuis le localStorage.
@@ -346,35 +280,6 @@ class ManageLocalStorage{
             console.log(" un erreur c'est produite lors du chargement du localStorage "+error);
         }   
     }
-
-    /**
-     * Récupèrent tous les données situé dans le localStorage.
-     */
-    getAllLocalStorage(){
-        return this.productAllList = { ...localStorage };
-    }
-
-    /**
-     * Retourne l'array productList.
-     */
-    getProductList(){ return this.productList;}
-
-    /**
-    * Retourne la variable productKey.
-    * @return { String } L'identifiant d'un produit.
-    */
-    getProductKey(){ return this.productKey;}
-
-    /**
-    * Retire un produit de la liste.
-    * @param { any } value  L'index du produit que l'ont souhaite retirer.
-    */
-    setLocalStorage_RemoveItem(value){localStorage.removeItem(value);}
-   
-    getLocalStorage_Length(){return localStorage.length;}
-
-
-    getLocalStorage_key(value){return localStorage.key(value);}
 }
 
 let product = connectToApiForOneProduct();

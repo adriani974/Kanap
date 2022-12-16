@@ -17,7 +17,6 @@ function connectToApiForOneProduct(_produit, _position, _positionFinal){
     let produit_id = null;
     let produit_color = null;
     let produit_quantity = null;
-    let produit_list = [];
    
     fetch("http://localhost:3000/api/products/"+this.id_product)
         .then(function(res){
@@ -41,7 +40,7 @@ function connectToApiForOneProduct(_produit, _position, _positionFinal){
                 listOfItems_ProductItem.push(item_product);
             }
 
-            //Ajoute l'identifiant du produit dans le tableau listOfID, ajoute le tableau produit_list au tableau listOfItems_ProductItem
+            //Ajoute l'identifiant du produit dans le tableau listOfID
             listOfID.push(produit_id);
 
             //Une fois la condition exact, ont ajoute des écouteurs d'événements aux élements html conserné puis met à jour le prix final ainsi que la quantité.
@@ -52,12 +51,12 @@ function connectToApiForOneProduct(_produit, _position, _positionFinal){
                         addListenersToManageDelete();
                         validAnOrder();
                         countTotalPrice();
-                        updateTotalPrice();
-                        updateTotalQuantity();
+                        document.querySelector("#totalPrice").innerHTML = totalPrice; 
+                        document.querySelector("#totalQuantity").innerHTML = totalQuantity; 
                     } catch (error) {
                         console.log("Une erreur c'est produite dans l'ecouteur de quantity :"+error);
                     } 
-                  }, 500) 
+                  }, 600) 
             }
         })
         .catch(function(err){    
@@ -116,8 +115,8 @@ function addListenersToManageQuantity(){
             totalPrice = 0;
             totalQuantity = 0;
             countTotalPrice();
-            updateTotalPrice();
-            updateTotalQuantity();
+            document.querySelector("#totalPrice").innerHTML = totalPrice; 
+            document.querySelector("#totalQuantity").innerHTML = totalQuantity; 
         });
     });    
 }
@@ -153,8 +152,8 @@ function addListenersToManageDelete(){
             totalPrice = 0;
             totalQuantity = 0;
             countTotalPrice();
-            updateTotalPrice();
-            updateTotalQuantity();
+            document.querySelector("#totalPrice").innerHTML = totalPrice; 
+            document.querySelector("#totalQuantity").innerHTML = totalQuantity; 
         });
     }
 }
@@ -168,7 +167,7 @@ function addListenersToManageDelete(){
  function updateDelete(_produit, _id, _color){   
     removeItemFromLocalStorage(_id, _color);
     removeItemFromListOfProduits(_id, _color);
-    removeItemFromHtml(_produit);
+    _produit.remove();//retire le produit de la page html
 }
 
 /**
@@ -177,7 +176,6 @@ function addListenersToManageDelete(){
  * @param { String } _color la couleur du produit.
  */
 function removeItemFromLocalStorage(_id, _color){
-    let position = 0;
     let items = localStorage.getItem(_id);
     let itemsJson = JSON.parse(items);
     let itemList = [];
@@ -187,22 +185,18 @@ function removeItemFromLocalStorage(_id, _color){
         localStorage.removeItem(_id);
        
     }else{
-        //ont récupère la position de l'item
-        for(let i = 0; i < itemsJson.length; i++){
-            
+        for(let i = 0; i < itemsJson.length; i++){ 
             if(itemsJson[i].color === _color){//Si un produit correspond aux paramètres id et color, alors l'ignore.
                 
             }else{//Sinon on enregistre le produit dans une nouvelle liste temporaire
                 itemListFinal.push(itemsJson[i]);
             }   
-        }
-        
+        }  
         itemList.clear;
 
         //ont transforme la liste obtenue en format Json
         localStorage.setItem(_id, JSON.stringify(itemListFinal));
     }
-    
 }
 
 /**
@@ -225,14 +219,6 @@ function removeItemFromListOfProduits(_id, _color){
     newList.clear;
 }
 
-/**
- * Supprime un produit de la page html.
- * @param { ProductItem } _produit Une instance du produit.
- */
-function removeItemFromHtml(_produit){
-    _produit.remove();
-}
-
 
 /**
  * Additionnent tous les produits de la même catégorie pour avoir la quantité et le prix total de l'ensemble des produits
@@ -243,7 +229,6 @@ function countTotalPrice(){
     let priceList = [];
     let price = 0;
     let newTotalPrice = 0;
-    let positionId = 0;
     priceList.clear;
     quantityList.clear;
     //Pour chaque produit de listOfItems_ProductItem on vérifie si l'identifiant du produit est la même que celle de listOfID
@@ -266,7 +251,6 @@ function countTotalPrice(){
         quantity = 0;
     }
     
-
     //ont additionnent chaque quantité afin d'obtenir la quantité total de produit
     quantityList.forEach(element => {
         totalQuantity = totalQuantity + Number(element);
@@ -277,7 +261,6 @@ function countTotalPrice(){
         newTotalPrice = Number(priceList[i]) * Number(quantityList[i]);
         totalPrice = totalPrice + newTotalPrice;
     }
-
 }
 
 /**
@@ -294,20 +277,6 @@ function updateQuantity(_id, _color, _quantity){
         } 
     });
    
-}
-
-/**
- * Met à jour le prix dans la page html.
- */
-function updateTotalPrice(){
-    document.querySelector("#totalPrice").innerHTML = totalPrice; 
-}
-
-/**
- * Met à jour la quantité dans la page html.
- */
-function updateTotalQuantity(){
-    document.querySelector("#totalQuantity").innerHTML = totalQuantity; 
 }
 
 /**
@@ -328,11 +297,11 @@ function checkInputForm(_firstName, _lastName, _address, _city, _email){
     let email_errorMessage = document.getElementById('emailErrorMsg');
 
     //Je crée les filtres pour champs du formulaire
-    const firstNameRGEX = /^([A-Za-z-\s]{3,})+$/;
+    const firstNameRGEX = new RegExp(/^([A-Za-z-\s]{3,})+$/);
     const lastNameRGEX = firstNameRGEX;
-    const addressRGEX = /^([A-Za-z0-9]+( [A-Za-z0-9]+)+)+$/ ;
+    const addressRGEX = new RegExp(/^([A-Za-z0-9]+( [A-Za-z0-9]+)+)+$/);
     const cityRGEX = firstNameRGEX;
-    const emailRGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+    const emailRGEX = new RegExp(/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/);
 
     //Test chaque champ afin de vérifier leur validité
     let firstNameResult = firstNameRGEX.test(_firstName);
@@ -375,7 +344,6 @@ function checkInputForm(_firstName, _lastName, _address, _city, _email){
       email_errorMessage.innerHTML = ' '; 
     }
 
-
     //Si tous les champs sont valide ont renvoie true, sinon ont renvoie false
     if(firstNameResult == true && lastNameResult == true && addressResult == true && cityResult == true && emailResult == true){
         console.log("tout les champs sont valide");
@@ -383,8 +351,7 @@ function checkInputForm(_firstName, _lastName, _address, _city, _email){
     }else{
         console.log("tout les champs sont pas valide");
         return false;
-    }
-    
+    }  
 }
 
 /**
@@ -397,8 +364,7 @@ function validAnOrder(){
     let address = document.getElementById('address');
     let city = document.getElementById('city');
     let email = document.getElementById('email');
-    
-    
+
     let button_order = document.querySelector("#order");
 
     button_order.addEventListener("click", (event) => {
@@ -409,8 +375,7 @@ function validAnOrder(){
             //On crée un objet de Contact auquel ont ajoutera comme paramètre les données du formulaire validé
             const contact = new Contact(firstName.value, lastName.value, address.value, city.value, email.value);
             connectToApiForPost(contact);
-        }
-       
+        } 
     });
 }
 
@@ -435,12 +400,11 @@ async function connectToApiForPost(_contact){
           let result = await response.json();
           //alert(" post :"+result);
           let orderId = result.orderId;
-          manageLocalStorage.deleteAllDataInLocalStorage();
+          localStorage.clear();
           window.location.assign("confirmation.html?id=" + orderId); 
     } catch (error) {
         console.log("erreur à l\'envoie de donnee post : "+error);
-    }
-    
+    } 
 }
 
 /**
@@ -555,12 +519,6 @@ class Contact{
     }
 
     /**
-     * Retourne un tableau de type String contenant les différents couleur disponible pour le sofa.
-     * @return { Array } Les differents couleurs disponible.
-     */
-    getColors(){return this.sofa.colors;}
-
-    /**
      * Retourne l'identifiant du sofa.
      * @return { String } L'identifiant.
      */
@@ -585,127 +543,10 @@ class Contact{
     getImageURL(){return this.sofa.imageUrl;}
 
     /**
-     * Retourne la description du sofa.
-     * @return { String } La description.
-     */
-    getDescription(){return this.sofa.description;}
-
-    /**
      * Retourne le texte alternative associer à l'image du sofa.
      * @return { String } Le texte alternative.
      */
     getAltTxt(){return this.sofa.altTxt;}  
-}
-
-/**
- * Classe permettant de gérer les données du localStorage.
- * @param { any } _id L'identifiant du produit.
- * @param { any } _color La couleur du produit.
- * @param { any } _quantity La quantité du produit.
- */
-class ManageLocalStorage{
-    productList = [];
-    productAllList = [];
-    productKey = "";
-    constructor(){
-        
-    }
-
-    /**
-     * Efface toute les données contenue dans le localStorage.
-     */
-    deleteAllDataInLocalStorage(){localStorage.clear();}
-    
-    /**
-    * Vérifie si le produit avec la même couleur est déjà enregistrer dans le localStorage dans ce cas ont enregistre seulement la quantité, sinon on enregistre le nouveau produit dans le localStorage
-    * @param { Array } item Correspond au produit actuel de la page.
-    * @return { Boolean } Renvoie false si le même produit et la même couleur existe dans le localStorage sinon renvoie true.
-    */
-    checkSameIDAndColor(item){
-        for (let i in this.productList) {
-            if(this.productList[i].id == item.id && this.productList[i].color == item.color){
-                let newQuantity = Number(this.productList[i].quantity) + Number(getQuantity());
-                this.productList[i].quantity = newQuantity;
-               
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Ajoute le produit dans la liste.
-     * @param { any } _id L'identifiant du produit.
-     * @param { any } _color La couleur du produit.
-     * @param { any } _quantity La quantité du produit.
-     */
-    addItemIntoProductList(_id, _color, _quantity){
-        let item = {id: _id, color: _color, quantity: _quantity};
-
-        if(this.checkSameIDAndColor(item)){
-            this.productList.push(item);
-        }
-    }
-
-    /**
-     * Enregistre la liste actuel du produit dans le localStorage.
-     */
-    setLocalStorageProducts(){
-        try { 
-            let listProductsInPanier = JSON.stringify(this.productList);
-            localStorage.setItem(this.productKey, listProductsInPanier);
-
-        } catch (error) {
-             console.log(" un erreur c'est produite lors du sauvegarde dans le localStorage "+error);
-        }
-        
-    }
-
-    /**
-     * Modifie la variable productKey.
-     * @param { String } _productKey  L'identifiant d'un produit.
-     */
-    setProductKey(_productKey){ this.productKey = _productKey;}
-
-    
-    /**
-     * Récupère la liste du produit depuis le localStorage.
-     */
-    getLocalStorageProducts(){ 
-        try {
-            let getAllProducts = localStorage.getItem(this.productKey);
-            if(getAllProducts != null){ 
-                this.productList =  JSON.parse(getAllProducts);   
-            }
-        } catch (error) {
-            console.log(" un erreur c'est produite lors du chargement du localStorage "+error);
-        }   
-    }
-
-    /**
-     * Récupèrent tous les données situé dans le localStorage.
-     */
-    getAllLocalStorage(){
-        return this.productAllList = { ...localStorage };
-    }
-
-    /**
-     * Retourne l'array productList.
-     */
-    getProductList(){ return this.productList;}
-
-    /**
-    * Retourne la variable productKey.
-    * @return { String } L'identifiant d'un produit.
-    */
-    getProductKey(){ return this.productKey;}
-
-    /**
-    * Retire un produit de la liste.
-    * @param { any } value  L'index du produit que l'ont souhaite retirer.
-    */
-    setLocalStorage_RemoveItem(value){localStorage.removeItem(value);}
-   
 }
 
 /********************************************************************************************* */
@@ -714,161 +555,76 @@ class ManageLocalStorage{
  */
 function createElementHtml(_sofa, _produit_id, _produit_color, _produit_quantity){
     const element_section = document.getElementById("cart__items");
-    try {
-        element_section.appendChild(elementHtml_Div__cartItem(_sofa, _produit_id, _produit_color, _produit_quantity));
-    } catch (error) {
-        console.log(" Une erreur détécter lors de la création d'élément html "+error);
-    }   
-}
-
-/**
- * Crée un element html de type 'article' contenant l'image, le nom, la description et les options de modification du produit.
- * @param { ProductSofa } sofa modèle représentant un produit de type canapé.
- */
-function elementHtml_Div__cartItem(_sofa, _produit_id, _produit_color, _produit_quantity){
     const element_article = document.createElement("article");
-    element_article.classList.add("cart__item");
-
-    element_article.dataset.id = _produit_id;
-    element_article.dataset.color = _produit_color; 
-
-    element_article.appendChild(elementHtml_Div__cartItem_img(_sofa));
-    element_article.appendChild(elementHtml_Div__cartItem_content(_sofa, _produit_color, _produit_quantity));
-
-    return element_article;
-}
-
-/**
- * Crée un element html de type 'img' pour l'image du produit.
- * @param { ProductSofa } sofa modèle représentant un produit de type canapé.
- * @return { any } Une balise html de type div.
- */
- function elementHtml_Div__cartItem_img(_sofa){
     const element_div = document.createElement("div");
     const element_img = document.createElement("img");
-
-    element_div.classList.add("cart__item__img");
-
-    //modifie les attributs
-    element_img.setAttribute("src", _sofa.getImageURL());
-    element_img.setAttribute("alt", _sofa.getAltTxt());
-
-    //ajoute les balises enfants aux balises parents concernée
-    element_div.appendChild(element_img);
-
-    return element_div;
-}
-
-/**
- * Crée un element html de type 'div' contenant la description du produit ainsi que la possibiliter de modifier sa quantité ou l'effacer.
- * @param { ProductSofa } sofa modèle représentant un produit de type canapé.
- * @return { any } Une balise html de type div.
- */
-function elementHtml_Div__cartItem_content(_sofa, _produit_color, _produit_quantity){
-    const element_div = document.createElement("div");
-
-    element_div.classList.add("cart__item__content");
-    element_div.appendChild(elementHtml_Div__cartItem_contentDescription(_sofa, _produit_color));
-    element_div.appendChild(elementHtml_Div__cartItem_contentSettings(_produit_quantity));
-
-    return element_div;
-}
-
-/**
- * Crée un element html de type 'div' contenant la description du produit ainsi que la possibiliter de modifier sa quantité ou l'effacer.
- * @param { ProductSofa } sofa modèle représentant un produit de type canapé.
- * @return { any } Une balise html de type div.
- */
-function elementHtml_Div__cartItem_contentDescription(_sofa, _produit_color){
-    const element_div = document.createElement("div");
+    const element_div2 = document.createElement("div");
+    const element_div3 = document.createElement("div");
     const element_h2 = document.createElement("h2");
     const element_p1 = document.createElement("p");
     const element_p2 = document.createElement("p");
+    const element_div4 = document.createElement("div");
+    const element_div5 = document.createElement("div");
+    const element_p = document.createElement("p");
+    const element_input = document.createElement("input");
+    const element_div6 = document.createElement("div");
+    const element_p6 = document.createElement("p");
 
     //Insert un texte entre les balises concernés
     const textFor_h2 = document.createTextNode(_sofa.getName());
     const textFor_p1 = document.createTextNode(_produit_color);
     const textFor_p2 = document.createTextNode(_sofa.getPrice()+" €");
-
-    element_div.classList.add("cart__item__content__description");
-
-    element_h2.appendChild(textFor_h2);
-    element_p1.appendChild(textFor_p1);
-    element_p2.appendChild(textFor_p2);
-    element_div.appendChild(element_h2);
-    element_div.appendChild(element_p1);
-    element_div.appendChild(element_p2);
-
-    return element_div;
-}
-
-/**
- * Crée un element html de type 'div' contenant la possibiliter de modifier sa quantité ou l'effacer .
- * @return { any } Une balise html de type div.
- */
-function elementHtml_Div__cartItem_contentSettings(_produit_quantity){
-    const element_div = document.createElement("div");
-
-    element_div.classList.add("cart__item__content__settings");
-    element_div.appendChild(elementHtml_Div__cartItem_contentSettings_quantity(_produit_quantity));
-    element_div.appendChild(elementHtml_Div__cartItem_contentSettings_delete(_produit_quantity));
-
-    return element_div;
-}
-
-/**
- * Crée un element html de type 'div' permettant de modifier la quantité actuel du produit selectionné .
- * @return { any } Une balise html de type div.
- */
-function elementHtml_Div__cartItem_contentSettings_quantity(_produit_quantity){
-    const element_div = document.createElement("div");
-    const element_p = document.createElement("p");
-    const element_input = document.createElement("input");
-
-    element_div.classList.add("cart__item__content__settings__quantity");
-    element_input.classList.add("itemQuantity");
-
     const textFor_p = document.createTextNode("Qté : ");
+    const textFor_p6 = document.createTextNode("Supprimer");
+
+    element_article.dataset.id = _produit_id;
+    element_article.dataset.color = _produit_color; 
+
+    element_article.classList.add("cart__item");
+    element_div3.classList.add("cart__item__content__description");
+    element_div2.classList.add("cart__item__content");
+    element_div.classList.add("cart__item__img");
+    element_div4.classList.add("cart__item__content__settings");
+    element_div5.classList.add("cart__item__content__settings__quantity");
+    element_input.classList.add("itemQuantity");
+    element_div6.classList.add("cart__item__content__settings__delete");
+    element_p6.classList.add("deleteItem");
+    
 
     //modifie les attributs
+    element_img.setAttribute("src", _sofa.getImageURL());
+    element_img.setAttribute("alt", _sofa.getAltTxt());
     element_input.setAttribute("type", "number");
     element_input.setAttribute("name", "itemQuantity");
     element_input.setAttribute("min", "1");
     element_input.setAttribute("max", "100");
     element_input.setAttribute("value", _produit_quantity);
 
+
+    //ajoute les balises enfants aux balises parents concernée  
+    element_p6.appendChild(textFor_p6);
+    element_div6.appendChild(element_p6);
     element_p.appendChild(textFor_p);
-    element_div.appendChild(element_p);
-    element_div.appendChild(element_input);
-
-    return element_div;
+    element_div5.appendChild(element_p);
+    element_div5.appendChild(element_input);
+    element_div4.appendChild(element_div5);
+    element_div4.appendChild(element_div6);
+    element_h2.appendChild(textFor_h2);
+    element_p1.appendChild(textFor_p1);
+    element_p2.appendChild(textFor_p2);
+    element_div3.appendChild(element_h2);
+    element_div3.appendChild(element_p1);
+    element_div3.appendChild(element_p2);
+    element_div2.appendChild(element_div3);
+    element_div2.appendChild(element_div4);
+    element_div.appendChild(element_img);
+    element_article.appendChild(element_div);
+    element_article.appendChild(element_div2);
+    element_section.appendChild(element_article);    
 }
-
-/**
- * Crée un element html de type 'div' permettant de supprimé le produit actuel selectionné .
- * @return { any } Une balise html de type div.
- */
-function elementHtml_Div__cartItem_contentSettings_delete(){
-    const element_div = document.createElement("div");
-    const element_p = document.createElement("p");
-
-    element_div.classList.add("cart__item__content__settings__delete");
-    element_p.classList.add("deleteItem");
-
-    const textFor_p = document.createTextNode("Supprimer");
-    
-    element_p.appendChild(textFor_p);
-    element_div.appendChild(element_p);
-
-    return element_div;
-}
-
 /****************************************************************************************** */
-//Crée une instance de la classe
-var manageLocalStorage = new ManageLocalStorage();
-
 //Récupèrent tous les items contenue dans le localStorage et les ajoutent au tableau listOfItems_fromApiProduct 
-listOfItems_fromApiProduct = manageLocalStorage.getAllLocalStorage();
+listOfItems_fromApiProduct = this.productAllList = { ...localStorage };
 
 //Récupèrent une Promise pour l'ensemble de produit issue du panier et donc du localStorage
 Promise.all([listOfItems_fromApiProduct])
